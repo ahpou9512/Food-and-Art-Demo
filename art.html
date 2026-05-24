@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Y-List · Art</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #0a0a0a;
+      --text:        #f5f2eb;
+      --muted:       rgba(245, 242, 235, 0.50);
+      --dim:         rgba(245, 242, 235, 0.28);
+      --dimmer:      rgba(245, 242, 235, 0.12);
+      --border:      rgba(245, 242, 235, 0.08);
+      --border-hi:   rgba(245, 242, 235, 0.18);
+      --surface:     rgba(245, 242, 235, 0.03);
+      --surface-hi:  rgba(245, 242, 235, 0.06);
+      --ongoing:     #6fcf97;
+      --upcoming:    #c8a96e;
+      --over:        rgba(245, 242, 235, 0.28);
+    }
+
+    html { -webkit-text-size-adjust: 100%; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .wrap { max-width: 720px; margin: 0 auto; }
+
+    /* ── Header ── */
+    .header { padding: 32px 20px 18px; }
+
+    .header-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .brand {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+
+    .nav-link {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      transition: color 0.15s;
+    }
+    .nav-link:hover { color: var(--text); }
+
+    .page-title {
+      font-size: 34px;
+      font-weight: 300;
+      letter-spacing: -0.6px;
+      line-height: 1;
+    }
+
+    /* ── Sticky controls ── */
+    .controls {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px 10px;
+    }
+
+    /* chip row */
+    .chip-row {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .chip-row::-webkit-scrollbar { display: none; }
+    .city-row { margin-bottom: 10px; }
+
+    .city-chip {
+      flex-shrink: 0;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 14px;
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.14s;
+      white-space: nowrap;
+    }
+    .city-chip:hover { border-color: var(--border-hi); color: var(--text); }
+    .city-chip.active { background: var(--text); color: var(--bg); border-color: var(--text); font-weight: 600; }
+
+    /* Status tabs */
+    .status-tabs {
+      display: flex;
+      gap: 0;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .status-tab {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 9px 12px;
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.14s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border-right: 1px solid var(--border);
+    }
+    .status-tab:last-child { border-right: none; }
+    .status-tab:hover { color: var(--text); background: var(--surface); }
+    .status-tab.active { background: var(--surface-hi); color: var(--text); font-weight: 600; }
+    .status-tab.active[data-status="Ongoing"]  .tab-dot { background: var(--ongoing); }
+    .status-tab.active[data-status="Upcoming"] .tab-dot { background: var(--upcoming); }
+    .status-tab.active[data-status="Over"]     .tab-dot { background: var(--muted); }
+
+    .tab-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--dim);
+      flex-shrink: 0;
+      transition: background 0.14s;
+    }
+
+    .tab-count {
+      font-size: 10px;
+      color: var(--dim);
+      font-weight: 400;
+    }
+
+    /* ── Card grid ── */
+    .grid-meta {
+      padding: 12px 20px 4px;
+      font-size: 11px;
+      color: var(--dim);
+      letter-spacing: 0.05em;
+      display: none;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2px;
+      padding: 2px;
+    }
+
+    .card {
+      position: relative;
+      aspect-ratio: 3 / 4;
+      overflow: hidden;
+      cursor: pointer;
+      background: var(--surface);
+    }
+
+    .card:hover .card-img { transform: scale(1.03); }
+
+    .card-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.4s ease;
+    }
+
+    .card-img-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      color: var(--dimmer);
+      background: var(--surface);
+    }
+
+    /* Gradient overlay */
+    .card-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(10,10,10,0.92) 0%, rgba(10,10,10,0.3) 55%, transparent 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 12px 10px 10px;
+    }
+
+    .card-status {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .card-status.ongoing  { color: var(--ongoing); }
+    .card-status.upcoming { color: var(--upcoming); }
+    .card-status.over     { color: var(--dim); }
+
+    .card-name {
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1.25;
+      color: var(--text);
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* ── Skeleton ── */
+    @keyframes pulse {
+      0%, 100% { opacity: 0.35; }
+      50%       { opacity: 0.6;  }
+    }
+
+    .skel-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2px;
+      padding: 2px;
+    }
+
+    .skel-card {
+      aspect-ratio: 3 / 4;
+      background: rgba(245,242,235,0.08);
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+    .skel-card:nth-child(even) { animation-delay: 0.3s; }
+
+    /* ── Empty / Error ── */
+    .state-box {
+      padding: 72px 20px;
+      text-align: center;
+    }
+    .state-icon  { font-size: 30px; margin-bottom: 14px; }
+    .state-title { font-size: 16px; font-weight: 500; margin-bottom: 6px; }
+    .state-sub   { font-size: 13px; color: var(--muted); }
+
+    /* ── Detail sheet ── */
+    .sheet-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 100;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      pointer-events: none;
+    }
+    .sheet-backdrop.visible { opacity: 1; pointer-events: all; }
+
+    .sheet {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%) translateY(100%);
+      width: 100%;
+      max-width: 720px;
+      max-height: 90dvh;
+      background: #111;
+      border-top: 1px solid var(--border-hi);
+      border-radius: 16px 16px 0 0;
+      z-index: 101;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .sheet.visible { transform: translateX(-50%) translateY(0); }
+
+    .sheet-handle-bar {
+      flex-shrink: 0;
+      display: flex;
+      justify-content: center;
+      padding: 10px 0 0;
+    }
+    .sheet-handle {
+      width: 36px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--dimmer);
+    }
+
+    .sheet-close {
+      position: absolute;
+      top: 14px;
+      right: 16px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--surface-hi);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      line-height: 1;
+      z-index: 1;
+      transition: all 0.15s;
+    }
+    .sheet-close:hover { background: var(--surface-hi); color: var(--text); border-color: var(--border-hi); }
+
+    .sheet-scroll {
+      flex: 1;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .sheet-img-wrap {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+
+    .sheet-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .sheet-img-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      color: var(--dimmer);
+    }
+
+    .sheet-body {
+      padding: 20px 20px 40px;
+    }
+
+    .sheet-status {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .sheet-status.ongoing  { color: var(--ongoing); }
+    .sheet-status.upcoming { color: var(--upcoming); }
+    .sheet-status.over     { color: var(--dim); }
+
+    .sheet-name {
+      font-size: 22px;
+      font-weight: 400;
+      line-height: 1.2;
+      letter-spacing: -0.3px;
+      margin-bottom: 8px;
+    }
+
+    .sheet-meta {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .sheet-notes {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--muted);
+      margin-bottom: 20px;
+      font-style: italic;
+    }
+
+    .sheet-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface-hi);
+      border: 1px solid var(--border-hi);
+      border-radius: 10px;
+      padding: 11px 18px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s;
+      text-decoration: none;
+    }
+    .sheet-link:hover { background: rgba(245,242,235,0.1); border-color: rgba(245,242,235,0.25); }
+
+    /* ── Footer ── */
+    .footer {
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--dimmer);
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-nav">
+      <span class="brand">Y-List</span>
+      <a href="eat.html" class="nav-link">Eat ↗</a>
+    </div>
+    <h1 class="page-title">Art</h1>
+  </header>
+
+  <!-- Sticky controls -->
+  <div class="controls">
+    <div class="chip-row city-row" id="cityRow"></div>
+    <div class="status-tabs" id="statusTabs"></div>
+  </div>
+
+  <!-- Grid meta + grid -->
+  <div class="grid-meta" id="gridMeta"></div>
+  <div id="artGrid"></div>
+
+  <footer class="footer">Y-List</footer>
+</div>
+
+<!-- Detail bottom sheet -->
+<div class="sheet-backdrop" id="backdrop"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true">
+  <div class="sheet-handle-bar"><div class="sheet-handle"></div></div>
+  <button class="sheet-close" id="sheetClose" aria-label="Close">×</button>
+  <div class="sheet-scroll">
+    <div class="sheet-img-wrap" id="sheetImgWrap"></div>
+    <div class="sheet-body">
+      <div class="sheet-status" id="sheetStatus"></div>
+      <div class="sheet-name" id="sheetName"></div>
+      <div class="sheet-meta" id="sheetMeta"></div>
+      <div class="sheet-notes" id="sheetNotes" style="display:none"></div>
+      <a class="sheet-link" id="sheetLink" style="display:none" target="_blank" rel="noopener noreferrer">View exhibition ↗</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const API_ART = 'https://ylist-api.ymanoukian.workers.dev/api/art';
+  const STATUSES = ['Ongoing', 'Upcoming', 'Over'];
+
+  let data        = [];
+  let activeCity  = 'all';
+  let activeStatus = 'Ongoing';
+
+  /* status helpers */
+  function statusClass(s) {
+    if (s === 'Ongoing')  return 'ongoing';
+    if (s === 'Upcoming') return 'upcoming';
+    return 'over';
+  }
+
+  function statusLabel(s) {
+    return s || 'Unknown';
+  }
+
+  /* filter */
+  function filtered() {
+    let list = data;
+    if (activeCity !== 'all')   list = list.filter(r => r.city === activeCity);
+    list = list.filter(r => (r.status || '') === activeStatus);
+    return list;
+  }
+
+  function countByStatus(city) {
+    const base = city === 'all' ? data : data.filter(r => r.city === city);
+    const counts = {};
+    STATUSES.forEach(s => { counts[s] = base.filter(r => r.status === s).length; });
+    return counts;
+  }
+
+  /* build controls */
+  function buildCityChips(records) {
+    const cities = [...new Set(records.map(r => r.city).filter(Boolean))].sort();
+    const row = document.getElementById('cityRow');
+    row.innerHTML = '';
+    const make = (label, val) => {
+      const b = document.createElement('button');
+      b.className = 'city-chip' + (val === activeCity ? ' active' : '');
+      b.textContent = label;
+      b.addEventListener('click', () => {
+        activeCity = val;
+        row.querySelectorAll('.city-chip').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        updateTabCounts();
+        render();
+      });
+      return b;
+    };
+    row.appendChild(make('All', 'all'));
+    cities.forEach(c => row.appendChild(make(c, c)));
+  }
+
+  function buildStatusTabs() {
+    const wrap = document.getElementById('statusTabs');
+    wrap.innerHTML = '';
+    const counts = countByStatus(activeCity);
+    STATUSES.forEach(s => {
+      const btn = document.createElement('button');
+      btn.className = 'status-tab' + (s === activeStatus ? ' active' : '');
+      btn.dataset.status = s;
+      btn.innerHTML = `
+        <span class="tab-dot"></span>
+        <span>${s}</span>
+        <span class="tab-count">${counts[s]}</span>
+      `;
+      btn.addEventListener('click', () => {
+        activeStatus = s;
+        wrap.querySelectorAll('.status-tab').forEach(x => x.classList.remove('active'));
+        btn.classList.add('active');
+        render();
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  function updateTabCounts() {
+    const counts = countByStatus(activeCity);
+    document.querySelectorAll('.status-tab').forEach(btn => {
+      const s = btn.dataset.status;
+      const countEl = btn.querySelector('.tab-count');
+      if (countEl) countEl.textContent = counts[s] || 0;
+    });
+  }
+
+  /* make card */
+  function makeCard(r) {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    if (r.image) {
+      const img = document.createElement('img');
+      img.className = 'card-img';
+      img.src = r.image;
+      img.alt = r.name || '';
+      img.loading = 'lazy';
+      img.onerror = () => {
+        img.remove();
+        const ph = document.createElement('div');
+        ph.className = 'card-img-placeholder';
+        ph.textContent = '🖼';
+        card.insertBefore(ph, card.firstChild);
+      };
+      card.appendChild(img);
+    } else {
+      const ph = document.createElement('div');
+      ph.className = 'card-img-placeholder';
+      ph.textContent = '🖼';
+      card.appendChild(ph);
+    }
+
+    const overlay = document.createElement('div');
+    overlay.className = 'card-overlay';
+
+    const statusEl = document.createElement('div');
+    statusEl.className = 'card-status ' + statusClass(r.status);
+    statusEl.textContent = statusLabel(r.status);
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'card-name';
+    nameEl.textContent = r.name || '';
+
+    overlay.appendChild(statusEl);
+    overlay.appendChild(nameEl);
+    card.appendChild(overlay);
+
+    card.addEventListener('click', () => openSheet(r));
+    return card;
+  }
+
+  /* skeleton */
+  function showSkeleton() {
+    const grid = document.getElementById('artGrid');
+    grid.innerHTML = '';
+    const sg = document.createElement('div');
+    sg.className = 'skel-grid';
+    for (let i = 0; i < 8; i++) {
+      const d = document.createElement('div');
+      d.className = 'skel-card';
+      sg.appendChild(d);
+    }
+    grid.appendChild(sg);
+  }
+
+  /* render */
+  function render() {
+    const grid = document.getElementById('artGrid');
+    const meta = document.getElementById('gridMeta');
+    const rows = filtered();
+
+    grid.innerHTML = '';
+    meta.style.display = 'block';
+    meta.textContent = rows.length + (rows.length === 1 ? ' exhibition' : ' exhibitions');
+
+    if (!rows.length) {
+      grid.innerHTML = `<div class="state-box">
+        <div class="state-icon">🎨</div>
+        <div class="state-title">Nothing here</div>
+        <div class="state-sub">Try a different city or status</div>
+      </div>`;
+      return;
+    }
+
+    const cg = document.createElement('div');
+    cg.className = 'card-grid';
+    rows.forEach(r => cg.appendChild(makeCard(r)));
+    grid.appendChild(cg);
+  }
+
+  /* detail sheet */
+  function isUrl(s) {
+    try { new URL(s); return true; } catch { return false; }
+  }
+
+  function openSheet(r) {
+    /* image */
+    const imgWrap = document.getElementById('sheetImgWrap');
+    imgWrap.innerHTML = '';
+    if (r.image) {
+      const img = document.createElement('img');
+      img.className = 'sheet-img';
+      img.src = r.image;
+      img.alt = r.name || '';
+      img.onerror = () => { imgWrap.innerHTML = '<div class="sheet-img-placeholder">🖼</div>'; };
+      imgWrap.appendChild(img);
+    } else {
+      imgWrap.innerHTML = '<div class="sheet-img-placeholder">🖼</div>';
+    }
+
+    /* text */
+    const statusEl = document.getElementById('sheetStatus');
+    statusEl.className = 'sheet-status ' + statusClass(r.status);
+    statusEl.textContent = statusLabel(r.status);
+
+    document.getElementById('sheetName').textContent = r.name || '';
+
+    const metaParts = [r.museum, r.city].filter(Boolean);
+    document.getElementById('sheetMeta').textContent = metaParts.join(' · ');
+
+    const notesEl = document.getElementById('sheetNotes');
+    if (r.notes) { notesEl.textContent = r.notes; notesEl.style.display = 'block'; }
+    else { notesEl.style.display = 'none'; }
+
+    const linkEl = document.getElementById('sheetLink');
+    const linkUrl = [r.location, r.website].find(u => u && isUrl(u));
+    if (linkUrl) { linkEl.href = linkUrl; linkEl.style.display = 'inline-flex'; }
+    else { linkEl.style.display = 'none'; }
+
+    /* animate in */
+    document.getElementById('backdrop').classList.add('visible');
+    document.getElementById('sheet').classList.add('visible');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeSheet() {
+    document.getElementById('backdrop').classList.remove('visible');
+    document.getElementById('sheet').classList.remove('visible');
+    document.body.style.overflow = '';
+  }
+
+  document.getElementById('backdrop').addEventListener('click', closeSheet);
+  document.getElementById('sheetClose').addEventListener('click', closeSheet);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+
+  /* touch-to-dismiss sheet */
+  let touchStartY = 0;
+  const sheet = document.getElementById('sheet');
+  sheet.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, { passive: true });
+  sheet.addEventListener('touchmove', e => {
+    const scroll = sheet.querySelector('.sheet-scroll');
+    if (scroll && scroll.scrollTop > 0) return;
+    const dy = e.touches[0].clientY - touchStartY;
+    if (dy > 60) closeSheet();
+  }, { passive: true });
+
+  /* init */
+  (async function () {
+    showSkeleton();
+    try {
+      const resp = await fetch(API_ART);
+      if (!resp.ok) throw new Error(resp.status);
+      const json = await resp.json();
+      data = Array.isArray(json) ? json : (json.records || json.data || []);
+
+      buildCityChips(data);
+      buildStatusTabs();
+      render();
+    } catch {
+      document.getElementById('artGrid').innerHTML = `<div class="state-box">
+        <div class="state-icon">⚠️</div>
+        <div class="state-title">Couldn't load exhibitions</div>
+        <div class="state-sub">Please try again later</div>
+      </div>`;
+    }
+  })();
+})();
+</script>
+
+</body>
+</html>

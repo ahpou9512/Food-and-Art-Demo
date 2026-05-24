@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Y-List · Eat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #0a0a0a;
+      --text:        #f5f2eb;
+      --muted:       rgba(245, 242, 235, 0.50);
+      --dim:         rgba(245, 242, 235, 0.28);
+      --dimmer:      rgba(245, 242, 235, 0.12);
+      --border:      rgba(245, 242, 235, 0.08);
+      --border-hi:   rgba(245, 242, 235, 0.18);
+      --surface:     rgba(245, 242, 235, 0.03);
+      --surface-hi:  rgba(245, 242, 235, 0.06);
+      --accent:      #c8a96e;
+    }
+
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .wrap { max-width: 720px; margin: 0 auto; }
+
+    /* ── Header ── */
+    .header {
+      padding: 32px 20px 18px;
+    }
+
+    .header-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .brand {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+
+    .nav-link {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      transition: color 0.15s;
+    }
+    .nav-link:hover { color: var(--text); }
+
+    .page-title {
+      font-size: 34px;
+      font-weight: 300;
+      letter-spacing: -0.6px;
+      line-height: 1;
+    }
+
+    /* ── Sticky controls ── */
+    .controls {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px 10px;
+    }
+
+    /* Search + sort row */
+    .search-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      position: relative;
+    }
+
+    .search-wrap {
+      flex: 1;
+      position: relative;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--dim);
+      font-size: 15px;
+      pointer-events: none;
+      line-height: 1;
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px 10px 36px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s;
+      -webkit-appearance: none;
+    }
+    .search-input::placeholder { color: var(--dim); }
+    .search-input:focus { border-color: var(--border-hi); }
+
+    .sort-toggle {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 13px;
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+    .sort-toggle:hover,
+    .sort-toggle.open { border-color: var(--border-hi); color: var(--text); }
+
+    .sort-caret { font-size: 9px; opacity: 0.5; }
+
+    /* Sort popover */
+    .sort-pop {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      background: #181818;
+      border: 1px solid var(--border-hi);
+      border-radius: 10px;
+      overflow: hidden;
+      z-index: 200;
+      min-width: 170px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+      display: none;
+    }
+    .sort-pop.open { display: block; }
+
+    .sort-opt {
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background 0.1s, color 0.1s;
+      border-bottom: 1px solid var(--border);
+    }
+    .sort-opt:last-child { border-bottom: none; }
+    .sort-opt:hover { background: var(--surface-hi); color: var(--text); }
+    .sort-opt.active { color: var(--text); font-weight: 500; }
+
+    /* Chip rows */
+    .chip-row {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .chip-row::-webkit-scrollbar { display: none; }
+
+    .city-row { margin-bottom: 8px; }
+
+    .city-chip {
+      flex-shrink: 0;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 14px;
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.14s;
+      white-space: nowrap;
+    }
+    .city-chip:hover { border-color: var(--border-hi); color: var(--text); }
+    .city-chip.active { background: var(--text); color: var(--bg); border-color: var(--text); font-weight: 600; }
+
+    .vibe-chip {
+      flex-shrink: 0;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      cursor: pointer;
+      transition: all 0.14s;
+      line-height: 1;
+    }
+    .vibe-chip:hover { border-color: var(--border-hi); background: var(--surface); }
+    .vibe-chip.active { border-color: var(--border-hi); background: var(--surface-hi); box-shadow: inset 0 0 0 1px var(--dimmer); }
+
+    /* ── List ── */
+    .list-meta {
+      padding: 10px 20px 2px;
+      font-size: 11px;
+      color: var(--dim);
+      letter-spacing: 0.05em;
+      display: none;
+    }
+
+    .section-label {
+      padding: 14px 20px 6px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+
+    .restaurant-row {
+      display: flex;
+      align-items: center;
+      padding: 13px 20px;
+      gap: 13px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+      cursor: default;
+    }
+    .restaurant-row.is-link {
+      cursor: pointer;
+    }
+    @media (hover: hover) {
+      .restaurant-row.is-link:hover { background: var(--surface); }
+    }
+    .restaurant-row.is-link:active { background: var(--surface); }
+
+    /* Thumbnail */
+    .thumb {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .thumb-letter {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--dimmer);
+      text-transform: uppercase;
+    }
+
+    /* Content */
+    .row-body { flex: 1; min-width: 0; }
+
+    .row-name {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.3;
+    }
+
+    .top-badge {
+      display: inline-block;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      border-radius: 3px;
+      padding: 1px 5px;
+      margin-right: 5px;
+      vertical-align: middle;
+      position: relative;
+      top: -1px;
+    }
+
+    .row-sub {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.3;
+    }
+
+    .row-notes {
+      font-size: 11px;
+      color: var(--accent);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-style: italic;
+    }
+
+    .row-vibes {
+      display: flex;
+      gap: 2px;
+      margin-top: 3px;
+    }
+    .row-vibe { font-size: 12px; }
+
+    /* Right */
+    .row-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+
+    .price-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 0.03em;
+    }
+
+    .row-chevron {
+      color: var(--dim);
+      font-size: 18px;
+      font-weight: 300;
+      line-height: 1;
+    }
+
+    /* ── Skeleton ── */
+    @keyframes pulse {
+      0%, 100% { opacity: 0.35; }
+      50%       { opacity: 0.6; }
+    }
+
+    .skel-row {
+      display: flex;
+      align-items: center;
+      padding: 13px 20px;
+      gap: 13px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .skel {
+      background: rgba(245,242,235,0.1);
+      border-radius: 4px;
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+
+    .skel-thumb { width: 44px; height: 44px; border-radius: 8px; flex-shrink: 0; }
+    .skel-body  { flex: 1; }
+    .skel-name  { height: 14px; width: 52%; margin-bottom: 8px; }
+    .skel-sub   { height: 12px; width: 36%; }
+    .skel-price { width: 22px; height: 12px; }
+
+    /* ── Empty / Error ── */
+    .state-box {
+      padding: 72px 20px;
+      text-align: center;
+    }
+    .state-icon  { font-size: 30px; margin-bottom: 14px; }
+    .state-title { font-size: 16px; font-weight: 500; margin-bottom: 6px; }
+    .state-sub   { font-size: 13px; color: var(--muted); }
+
+    /* ── Footer ── */
+    .footer {
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--dimmer);
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-nav">
+      <span class="brand">Y-List</span>
+      <a href="art.html" class="nav-link">Art ↗</a>
+    </div>
+    <h1 class="page-title">Eat</h1>
+  </header>
+
+  <!-- Sticky controls -->
+  <div class="controls" id="controls">
+    <div class="search-row">
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input
+          type="search"
+          class="search-input"
+          id="searchInput"
+          placeholder="Search by name, area…"
+          autocomplete="off"
+          autocorrect="off"
+          spellcheck="false"
+        >
+      </div>
+      <div style="position:relative; flex-shrink:0">
+        <button class="sort-toggle" id="sortToggle" aria-label="Sort">
+          <span id="sortLabel">A–Z</span>
+          <span class="sort-caret">▾</span>
+        </button>
+        <div class="sort-pop" id="sortPop">
+          <div class="sort-opt active" data-sort="name">Name A–Z</div>
+          <div class="sort-opt" data-sort="price-asc">Price: $ first</div>
+          <div class="sort-opt" data-sort="price-desc">Price: $$$$ first</div>
+          <div class="sort-opt" data-sort="neighborhood">Neighborhood</div>
+        </div>
+      </div>
+    </div>
+    <div class="chip-row city-row" id="cityRow"></div>
+    <div class="chip-row" id="vibeRow"></div>
+  </div>
+
+  <!-- List meta + rows -->
+  <div class="list-meta" id="listMeta"></div>
+  <div id="restaurantList"></div>
+
+  <footer class="footer">Y-List</footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const API_EAT = 'https://ylist-api.ymanoukian.workers.dev/api/eat';
+  const PRICE_RANK = { '$': 1, '$$': 2, '$$$': 3, '$$$$': 4 };
+  const SORT_LABELS = { name: 'A–Z', 'price-asc': '$ first', 'price-desc': '$$$$ first', neighborhood: 'Area' };
+  const EMOJI_RE = /\p{Extended_Pictographic}/gu;
+
+  let data       = [];
+  let activeCity = 'all';
+  let activeVibes = new Set();
+  let searchQ    = '';
+  let sortMode   = 'name';
+  let popOpen    = false;
+
+  /* helpers */
+  function vibeEmojis(vibes) {
+    const out = new Set();
+    (vibes || []).forEach(v => { const m = v.match(EMOJI_RE); if (m) m.forEach(e => out.add(e)); });
+    return [...out];
+  }
+
+  function allEmojis(records) {
+    const set = new Set();
+    records.forEach(r => vibeEmojis(r.vibes).forEach(e => set.add(e)));
+    return [...set];
+  }
+
+  /* filter + sort */
+  function filtered() {
+    let list = data;
+    if (activeCity !== 'all') list = list.filter(r => r.city === activeCity);
+    if (activeVibes.size)     list = list.filter(r => [...activeVibes].every(e => (r.vibes || []).some(v => v.includes(e))));
+    if (searchQ) {
+      const q = searchQ.toLowerCase();
+      list = list.filter(r =>
+        (r.name         || '').toLowerCase().includes(q) ||
+        (r.neighborhood || '').toLowerCase().includes(q) ||
+        (r.city         || '').toLowerCase().includes(q) ||
+        (r.notes        || '').toLowerCase().includes(q)
+      );
+    }
+    list = [...list].sort((a, b) => {
+      if (a.topPick !== b.topPick) return a.topPick ? -1 : 1;
+      switch (sortMode) {
+        case 'price-asc':    return (PRICE_RANK[a.price] || 99) - (PRICE_RANK[b.price] || 99);
+        case 'price-desc':   return (PRICE_RANK[b.price] || 0)  - (PRICE_RANK[a.price] || 0);
+        case 'neighborhood': {
+          const na = a.neighborhood || '￿', nb = b.neighborhood || '￿';
+          return na.localeCompare(nb) || (a.name || '').localeCompare(b.name || '');
+        }
+        default: return (a.name || '').localeCompare(b.name || '');
+      }
+    });
+    return list;
+  }
+
+  /* build controls */
+  function buildCityChips(records) {
+    const cities = [...new Set(records.map(r => r.city).filter(Boolean))].sort();
+    const row = document.getElementById('cityRow');
+    row.innerHTML = '';
+    const make = (label, val) => {
+      const b = document.createElement('button');
+      b.className = 'city-chip' + (val === activeCity ? ' active' : '');
+      b.textContent = label;
+      b.addEventListener('click', () => {
+        activeCity = val;
+        row.querySelectorAll('.city-chip').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        render();
+      });
+      return b;
+    };
+    row.appendChild(make('All', 'all'));
+    cities.forEach(c => row.appendChild(make(c, c)));
+  }
+
+  function buildVibeChips(emojis) {
+    const row = document.getElementById('vibeRow');
+    row.innerHTML = '';
+    if (!emojis.length) { row.style.display = 'none'; return; }
+    emojis.forEach(emoji => {
+      const b = document.createElement('button');
+      b.className = 'vibe-chip' + (activeVibes.has(emoji) ? ' active' : '');
+      b.textContent = emoji;
+      b.title = emoji;
+      b.addEventListener('click', () => {
+        activeVibes.has(emoji) ? activeVibes.delete(emoji) : activeVibes.add(emoji);
+        b.classList.toggle('active');
+        render();
+      });
+      row.appendChild(b);
+    });
+  }
+
+  /* make row element */
+  function makeRow(r) {
+    const emojis  = vibeEmojis(r.vibes);
+    const hasLink = !!r.mapsUrl;
+
+    const row = document.createElement(hasLink ? 'a' : 'div');
+    row.className = 'restaurant-row' + (hasLink ? ' is-link' : '');
+    if (hasLink) { row.href = r.mapsUrl; row.target = '_blank'; row.rel = 'noopener noreferrer'; }
+
+    /* thumb */
+    const thumb = document.createElement('div');
+    thumb.className = 'thumb';
+    if (r.image) {
+      const img = document.createElement('img');
+      img.src = r.image; img.alt = ''; img.loading = 'lazy';
+      img.onerror = () => { thumb.innerHTML = `<span class="thumb-letter">${(r.name || '?')[0]}</span>`; };
+      thumb.appendChild(img);
+    } else {
+      const lt = document.createElement('span');
+      lt.className = 'thumb-letter';
+      lt.textContent = (r.name || '?')[0];
+      thumb.appendChild(lt);
+    }
+
+    /* body */
+    const body = document.createElement('div');
+    body.className = 'row-body';
+
+    const nameLine = document.createElement('div');
+    nameLine.className = 'row-name';
+    if (r.topPick) {
+      const badge = document.createElement('span');
+      badge.className = 'top-badge';
+      badge.textContent = '★ Top';
+      nameLine.appendChild(badge);
+    }
+    nameLine.appendChild(document.createTextNode(r.name || ''));
+
+    const sub = document.createElement('div');
+    sub.className = 'row-sub';
+    sub.textContent = [r.neighborhood, r.city].filter(Boolean).join(' · ');
+
+    body.appendChild(nameLine);
+    body.appendChild(sub);
+
+    if (r.notes) {
+      const notes = document.createElement('div');
+      notes.className = 'row-notes';
+      notes.textContent = r.notes;
+      body.appendChild(notes);
+    }
+    if (emojis.length) {
+      const vrow = document.createElement('div');
+      vrow.className = 'row-vibes';
+      emojis.forEach(e => {
+        const s = document.createElement('span');
+        s.className = 'row-vibe';
+        s.textContent = e;
+        vrow.appendChild(s);
+      });
+      body.appendChild(vrow);
+    }
+
+    /* right */
+    const right = document.createElement('div');
+    right.className = 'row-right';
+    if (r.price) {
+      const pr = document.createElement('span');
+      pr.className = 'price-label';
+      pr.textContent = r.price;
+      right.appendChild(pr);
+    }
+    if (hasLink) {
+      const chev = document.createElement('span');
+      chev.className = 'row-chevron';
+      chev.textContent = '›';
+      right.appendChild(chev);
+    }
+
+    row.appendChild(thumb);
+    row.appendChild(body);
+    row.appendChild(right);
+    return row;
+  }
+
+  /* skeleton */
+  function showSkeleton() {
+    const list = document.getElementById('restaurantList');
+    list.innerHTML = '';
+    for (let i = 0; i < 8; i++) {
+      const d = document.createElement('div');
+      d.className = 'skel-row';
+      d.innerHTML = `
+        <div class="skel skel-thumb"></div>
+        <div class="skel-body">
+          <div class="skel skel-name"></div>
+          <div class="skel skel-sub"></div>
+        </div>
+        <div class="skel skel-price"></div>
+      `;
+      list.appendChild(d);
+    }
+  }
+
+  /* main render */
+  function render() {
+    const list  = document.getElementById('restaurantList');
+    const meta  = document.getElementById('listMeta');
+    const rows  = filtered();
+
+    list.innerHTML = '';
+    meta.style.display = 'block';
+    meta.textContent   = rows.length + (rows.length === 1 ? ' place' : ' places');
+
+    if (!rows.length) {
+      list.innerHTML = `<div class="state-box">
+        <div class="state-icon">🍽</div>
+        <div class="state-title">Nothing found</div>
+        <div class="state-sub">Try a different search or filter</div>
+      </div>`;
+      return;
+    }
+
+    const picks = rows.filter(r => r.topPick);
+    const rest  = rows.filter(r => !r.topPick);
+
+    if (picks.length) {
+      const lbl = document.createElement('div');
+      lbl.className = 'section-label';
+      lbl.textContent = '★ Top Picks';
+      list.appendChild(lbl);
+      picks.forEach(r => list.appendChild(makeRow(r)));
+    }
+
+    if (rest.length) {
+      if (picks.length) {
+        const lbl = document.createElement('div');
+        lbl.className = 'section-label';
+        lbl.textContent = 'All';
+        list.appendChild(lbl);
+      }
+      rest.forEach(r => list.appendChild(makeRow(r)));
+    }
+  }
+
+  /* sort popover */
+  function setSort(val) {
+    sortMode = val;
+    document.getElementById('sortLabel').textContent = SORT_LABELS[val];
+    document.querySelectorAll('.sort-opt').forEach(o => o.classList.toggle('active', o.dataset.sort === val));
+    closePop();
+    render();
+  }
+
+  function openPop()  { document.getElementById('sortPop').classList.add('open'); document.getElementById('sortToggle').classList.add('open'); popOpen = true; }
+  function closePop() { document.getElementById('sortPop').classList.remove('open'); document.getElementById('sortToggle').classList.remove('open'); popOpen = false; }
+
+  document.getElementById('sortToggle').addEventListener('click', e => { e.stopPropagation(); popOpen ? closePop() : openPop(); });
+  document.getElementById('sortPop').addEventListener('click', e => { const opt = e.target.closest('[data-sort]'); if (opt) setSort(opt.dataset.sort); });
+  document.addEventListener('click', () => { if (popOpen) closePop(); });
+
+  /* search */
+  document.getElementById('searchInput').addEventListener('input', e => { searchQ = e.target.value.trim(); render(); });
+
+  /* init */
+  (async function () {
+    showSkeleton();
+    try {
+      const resp = await fetch(API_EAT);
+      if (!resp.ok) throw new Error(resp.status);
+      const json = await resp.json();
+      data = Array.isArray(json) ? json : (json.records || json.data || []);
+      buildCityChips(data);
+      buildVibeChips(allEmojis(data));
+      render();
+    } catch {
+      document.getElementById('restaurantList').innerHTML = `<div class="state-box">
+        <div class="state-icon">⚠️</div>
+        <div class="state-title">Couldn't load restaurants</div>
+        <div class="state-sub">Please try again later</div>
+      </div>`;
+    }
+  })();
+})();
+</script>
+
+</body>
+</html>
